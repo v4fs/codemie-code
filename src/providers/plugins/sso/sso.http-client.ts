@@ -16,7 +16,7 @@ export interface CodeMieUserInfo {
   username: string;
   isAdmin: boolean;
   applications: string[];
-  applications_admin: string[];
+  applicationsAdmin: string[];
   picture: string;
   knowledgeBases: string[];
   userType?: string;
@@ -193,9 +193,17 @@ export async function fetchCodeMieUserInfo(
   // Parse response
   const userInfo = JSON.parse(response.data) as CodeMieUserInfo;
 
-  // Validate response structure
-  if (!userInfo || !Array.isArray(userInfo.applications) || !Array.isArray(userInfo.applications_admin)) {
-    throw new Error('Invalid user info response: missing applications arrays');
+  // Validate response structure - treat missing arrays as empty (some user types may omit them)
+  if (!userInfo || typeof userInfo !== 'object') {
+    throw new Error('Invalid user info response: unexpected response format');
+  }
+
+  // Normalize missing arrays to empty arrays
+  if (!Array.isArray(userInfo.applications)) {
+    userInfo.applications = [];
+  }
+  if (!Array.isArray(userInfo.applicationsAdmin)) {
+    userInfo.applicationsAdmin = [];
   }
 
   return userInfo;
