@@ -248,6 +248,34 @@ export const OPENCODE_MODEL_CONFIGS: Record<string, OpenCodeModelConfig> = {
       output: 16384
     }
   },
+  'claude-sonnet-4-6': {
+    id: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet 4.6',
+    displayName: 'Claude Sonnet 4.6',
+    family: 'claude-4',
+    tool_call: true,
+    reasoning: true,
+    attachment: true,
+    temperature: true,
+    structured_output: true,
+    modalities: {
+      input: ['text', 'image'],
+      output: ['text']
+    },
+    knowledge: '2025-05-01',
+    release_date: '2026-02-01',
+    last_updated: '2026-02-01',
+    open_weights: false,
+    cost: {
+      input: 3.30,
+      output: 16.50,
+      cache_read: 0.33
+    },
+    limit: {
+      context: 200000,
+      output: 64000
+    }
+  },
   'claude-opus-4-6': {
     id: 'claude-opus-4-6',
     name: 'Claude Opus 4.6',
@@ -301,6 +329,60 @@ export const OPENCODE_MODEL_CONFIGS: Record<string, OpenCodeModelConfig> = {
     limit: {
       context: 200000,
       output: 8192
+    }
+  },
+
+  // ── Qwen Models (via Bedrock/LiteLLM) ─────────────────────────────
+  'qwen.qwen3-coder-30b-a3b-v1': {
+    id: 'qwen.qwen3-coder-30b-a3b-v1',
+    name: 'Bedrock Qwen3 Coder 30B A3B',
+    displayName: 'Qwen3 Coder 30B A3B',
+    family: 'qwen3',
+    tool_call: true,
+    reasoning: true,
+    attachment: false,
+    temperature: true,
+    modalities: {
+      input: ['text'],
+      output: ['text']
+    },
+    knowledge: '2025-05-01',
+    release_date: '2025-05-01',
+    last_updated: '2025-05-01',
+    open_weights: true,
+    cost: {
+      input: 0.15,
+      output: 0.60
+    },
+    limit: {
+      context: 262144,
+      output: 131072
+    }
+  },
+  'qwen.qwen3-coder-480b-a35b-v1': {
+    id: 'qwen.qwen3-coder-480b-a35b-v1',
+    name: 'Bedrock Qwen3 Coder 480B A35B',
+    displayName: 'Qwen3 Coder 480B A35B',
+    family: 'qwen3',
+    tool_call: true,
+    reasoning: true,
+    attachment: false,
+    temperature: true,
+    modalities: {
+      input: ['text'],
+      output: ['text']
+    },
+    knowledge: '2025-05-01',
+    release_date: '2025-05-01',
+    last_updated: '2025-05-01',
+    open_weights: true,
+    cost: {
+      input: 0.22,
+      output: 1.80
+    },
+    limit: {
+      context: 262000,
+      output: 65536
     }
   },
 
@@ -407,6 +489,14 @@ const MODEL_FAMILY_DEFAULTS: Record<string, Partial<OpenCodeModelConfig>> = {
     temperature: false,
     modalities: { input: ['text', 'image'], output: ['text'] },
     limit: { context: 400000, output: 128000 }
+  },
+  'qwen': {
+    family: 'qwen3',
+    reasoning: true,
+    attachment: false,
+    temperature: true,
+    modalities: { input: ['text'], output: ['text'] },
+    limit: { context: 262000, output: 65536 }
   }
 };
 
