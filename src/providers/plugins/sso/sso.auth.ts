@@ -7,10 +7,33 @@
 
 import { createServer, Server } from 'http';
 import { URL } from 'url';
+import { existsSync } from 'fs';
 import open from 'open';
 import chalk from 'chalk';
 import type { SSOAuthConfig, SSOAuthResult, SSOCredentials } from '../../core/types.js';
 import { CredentialStore } from '../../../utils/security.js';
+
+/**
+ * Detect headless / containerised environments where opening a browser is not possible.
+ *
+ * Detection heuristics (any one is sufficient):
+ *   1. `/.dockerenv` file exists  → running inside a Docker container
+ *   2. `CI` env var is set         → most CI systems (GitHub Actions, GitLab CI, Jenkins …)
+ *   3. No `$DISPLAY` / `$WAYLAND_DISPLAY` on Linux → no X11/Wayland session available
+ *
+ * Users can also opt-in explicitly by setting `CODEMIE_HEADLESS=true`.
+ */
+function isHeadlessEnvironment(): boolean {
+  if (process.env.CODEMIE_HEADLESS === 'true') return true;
+  if (existsSync('/.dockerenv')) return true;
+  if (process.env.CI === 'true' || process.env.CI === '1') return true;
+  if (
+    process.platform === 'linux' &&
+    !process.env.DISPLAY &&
+    !process.env.WAYLAND_DISPLAY
+  ) return true;
+  return false;
+}
 
 /**
  * Normalize URL to base (protocol + host)
@@ -71,9 +94,21 @@ export class CodeMieSSO {
       const codeMieBase = this.ensureApiBase(config.codeMieUrl);
       const ssoUrl = `${codeMieBase}/v1/auth/login/${port}`;
 
-      // 3. Launch browser
-      console.log(chalk.white(`Opening browser for authentication...`));
-      await open(ssoUrl);
+      // 3. Launch browser (or print URL in headless / Docker environments)
+      if (isHeadlessEnvironment()) {
+        console.log(chalk.yellow('\n🐳 Headless/Docker environment detected — cannot open browser automatically.'));
+        console.log(chalk.white('\nTo authenticate, open the following URL in your local browser:'));
+        console.log(chalk.cyan.bold(`\n  ${ssoUrl}\n`));
+        console.log(chalk.white('The URL contains the callback port. Make sure that port is reachable from'));
+        console.log(chalk.white('your browser back to this machine (e.g. via Docker port mapping or SSH tunnel).'));
+        console.log(chalk.white(`  Callback port: ${chalk.cyan.bold(String(port))}`));
+        console.log(chalk.dim(`\nQuick Docker example:  docker run -p ${port}:${port} ...`));
+        console.log(chalk.dim(`Quick SSH tunnel:      ssh -L ${port}:localhost:${port} user@host`));
+        console.log(chalk.dim('\nWaiting for callback… (Ctrl+C to cancel)\n'));
+      } else {
+        console.log(chalk.white('Opening browser for authentication…'));
+        await open(ssoUrl);
+      }
 
       // 4. Wait for callback with timeout and abort signal
       const result = await this.waitForCallback(
@@ -258,7 +293,9 @@ export class CodeMieSSO {
         });
       });
 
-      this.server.listen(0, () => {
+      // Allow a fixed port via env var so Docker users can pre-expose it with -p
+      const fixedPort = process.env.CODEMIE_SSO_PORT ? parseInt(process.env.CODEMIE_SSO_PORT, 10) : 0;
+      this.server.listen(fixedPort, () => {
         const address = this.server!.address();
         serverPort = typeof address === 'object' && address ? address.port : 0;
         resolve(serverPort);
